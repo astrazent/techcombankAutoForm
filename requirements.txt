@@ -1,0 +1,7 @@
+opencv-python 
+pytesseract 
+pandas
+selenium
+pygame
+requests
+gtts
