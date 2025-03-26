@@ -95,6 +95,40 @@ def speakOut(gender):
     else:
         speak("...Tên: " + full_name + '.' + "Điện thoại: " + phone_number + '.' + '.' + split_number(id_number) + '.' + "Giới tính: " + "Nữ" + '.' + "ID: " + sale_id[-3:])
 
+def swap_tone(char):
+    tone_map = {
+        'á': 'ả', 'à': 'ã', 'ả': 'á', 'ã': 'à',
+        'é': 'ẻ', 'è': 'ẽ', 'ẻ': 'é', 'ẽ': 'è',
+        'ó': 'ỏ', 'ò': 'õ', 'ỏ': 'ó', 'õ': 'ò',
+        'ú': 'ủ', 'ù': 'ũ', 'ủ': 'ú', 'ũ': 'ù',
+        'í': 'ỉ', 'ì': 'ĩ', 'ỉ': 'í', 'ĩ': 'ì',
+        'ý': 'ỷ', 'ỳ': 'ỹ', 'ỷ': 'ý', 'ỹ': 'ỳ'
+    }
+    return tone_map.get(char, char)
+
+def fix_vietnamese_tone(name):
+    words = name.split()
+    tone_marks = {'sắc': 0, 'hỏi': 0}
+    word_tone_positions = []
+    
+    for i, word in enumerate(words):
+        has_sac = any(c in 'áéóúíý' for c in word)
+        has_hoi = any(c in 'ảẻỏủỉỷ' for c in word)
+        
+        if has_sac:
+            tone_marks['sắc'] += 1
+        if has_hoi:
+            tone_marks['hỏi'] += 1
+        
+        if has_sac or has_hoi:
+            word_tone_positions.append(i)
+    
+    if len(word_tone_positions) == 1 or any(count >= 2 for count in tone_marks.values()) or (tone_marks['sắc'] > 0 and tone_marks['hỏi'] > 0):
+        last_word_index = word_tone_positions[-1]
+        words[last_word_index] = ''.join(swap_tone(c) for c in words[last_word_index])
+
+    return ' '.join(words)
+
 for index, row in df.iterrows():
     full_name = row["Full Name"]
     phone_number = str(row["Phone Number"]).zfill(10)
@@ -115,7 +149,7 @@ for index, row in df.iterrows():
 
     gender = 0
     # 3. Giới tính khách hàng
-    if(doan_gioi_tinh_api(full_name)):
+    if doan_gioi_tinh_api(full_name):
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//input[@value='Nam' and @type='radio']"))).click()
     else:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//input[@value='Nữ' and @type='radio']"))).click()
@@ -154,14 +188,29 @@ for index, row in df.iterrows():
     branch_field.send_keys("NHN")
 
     # Cuộn đến phần tử (scroll vào vùng nhìn thấy của phần tử)
-    actions = ActionChains(driver)
-    actions.move_to_element(name_field).perform()
+    # actions = ActionChains(driver)
+    # actions.move_to_element(name_field).perform()
 
     # Chờ cho luồng kết thúc
     thread.join()
         
     # Chờ trước khi điền dữ liệu tiếp theo
-    input("Nhấn Enter để tiếp tục nhập dữ liệu...")
+    option = input("Sửa giới tính: 'c' || Sửa dấu tên: 'n' || Bỏ qua: phím bất kì")
+    # 3. Thay đổi giới tính
+    if option == 'c':
+        if gender == 1:
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//input[@value='Nam' and @type='radio']"))).click()
+            speak("Đã sửa thành: ", "nam")
+        else:
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//input[@value='Nữ' and @type='radio']"))).click()
+            speak("Đã sửa thành: ", "nữ")
+    
+    # Sửa từ huyền thành sắc và ngược lại (nếu có nhiều hơn 2 từ có chứa thì chuyển từ cuối cùng)
+    if option == 'n':
+        full_name = fix_vietnamese_tone(full_name)
+        name_field.send_keys(full_name)
+        speak("Đã sửa thành: ", full_name)
+
 
     # Tìm nút "Gửi" dựa trên thuộc tính data-automation-id
     submit_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-automation-id="submitButton"]')))
