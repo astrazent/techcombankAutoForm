@@ -9,7 +9,6 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 import requests
-import time
 import pygame
 from pydub import AudioSegment
 import io
@@ -29,7 +28,6 @@ driver = webdriver.Chrome(service=service, options=options)
 # Mở form
 form_url = "https://forms.office.com/Pages/ResponsePage.aspx?id=6A4wK-aYa0C_-NiZmIWkw1P8sBeFZWJFmf4o0atKnxpUQllPSkk5QkxMWDBTNjkzNzRDVEtPUVA0Ri4u&origin=QRCode"
 driver.get(form_url)
-time.sleep(2)
 
 # Khởi tạo pygame mixer một lần duy nhất
 pygame.mixer.init()
@@ -103,13 +101,13 @@ for index, row in df.iterrows():
     id_number = str(row["ID"])
     sale_id = str(row["Sale"])
 
-    thread = threading.Thread(target=speakOut(gender))
+    thread = threading.Thread(target=speakOut(doan_gioi_tinh_api(full_name)))
 
     # Bắt đầu luồng
     thread.start()
     
     # 1. Chọn địa điểm
-    driver.find_element(By.XPATH, "//span[@data-automation-id='radio' and @data-automation-value='MICRO0126-R5A-HGA-ĐH Kiến trúc']/input").click()
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//span[@data-automation-id='radio' and @data-automation-value='MICRO0126-R5A-HGA-ĐH Kiến trúc']/input"))).click()
 
     # 2. Họ tên khách hàng
     name_field = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[aria-labelledby="QuestionId_r4b8eb40b1fa54739990ff1246cf7434f QuestionInfo_r4b8eb40b1fa54739990ff1246cf7434f"]')))
@@ -118,9 +116,9 @@ for index, row in df.iterrows():
     gender = 0
     # 3. Giới tính khách hàng
     if(doan_gioi_tinh_api(full_name)):
-        driver.find_element(By.XPATH, "//input[@value='Nam' and @type='radio']").click()
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//input[@value='Nam' and @type='radio']"))).click()
     else:
-        driver.find_element(By.XPATH, "//input[@value='Nữ' and @type='radio']").click()
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//input[@value='Nữ' and @type='radio']"))).click()
         gender = 1
     
     # 4. Số điện thoại khách hàng
@@ -132,54 +130,53 @@ for index, row in df.iterrows():
     id_field.send_keys(id_number)
     
     # 6. Ngân hàng giao dịch
-    driver.find_element(By.XPATH, "//span[@data-automation-id='checkbox' and @data-automation-value='MB']/input").click()
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//span[@data-automation-id='checkbox' and @data-automation-value='MB']/input"))).click()
     
     # 7. Dịch vụ sử dụng
-    driver.find_element(By.XPATH, "//span[@data-automation-id='checkbox' and @data-automation-value='Tài khoản mới']/input").click()
-    driver.find_element(By.XPATH, "//span[@data-automation-id='checkbox' and @data-automation-value='AE+']/input").click()
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//span[@data-automation-id='checkbox' and @data-automation-value='Tài khoản mới']/input"))).click()
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//span[@data-automation-id='checkbox' and @data-automation-value='AE+']/input"))).click()
     
     # 8. Nhu cầu tư vấn
-    driver.find_element(By.XPATH, "//span[@data-automation-id='checkbox' and @data-automation-value='Tài khoản']/input").click()
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//span[@data-automation-id='checkbox' and @data-automation-value='Tài khoản']/input"))).click()
     
     # 9. Loại quà tặng
-    driver.find_element(By.XPATH, "//input[@value='Gấu bông móc khóa' and @type='radio']").click()
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//input[@value='Gấu bông móc khóa' and @type='radio']"))).click()
     
     # 10. ID Sale
     sale_field = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[aria-labelledby="QuestionId_rc905ba604c0f40a7ae0c089919b2d1d4 QuestionInfo_rc905ba604c0f40a7ae0c089919b2d1d4"]')))
     sale_field.send_keys(sale_id)
     
     # 11. Chức danh
-    driver.find_element(By.XPATH, "//input[@value='UB' and @type='radio']").click()
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//input[@value='UB' and @type='radio']"))).click()
     
     # 12. Mã chi nhánh
     branch_field = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[aria-labelledby="QuestionId_ra39c7b4e46f64477a5938833ed8b5abb QuestionInfo_ra39c7b4e46f64477a5938833ed8b5abb"]')))
     branch_field.send_keys("NHN")
 
-    if(not gender):
-        speak("...Tên: " + full_name + '.' + "Điện thoại: " + phone_number + '.' + "Giới tính: " + "Nam" + '.' + "ID: " + sale_id)
-    else:
-        speak("...Tên: " + full_name + '.' + "Điện thoại: " + phone_number + '.' + "Giới tính: " + "Nữ" + '.' + "ID: " + sale_id)
-    
+    # Cuộn đến phần tử (scroll vào vùng nhìn thấy của phần tử)
+    actions = ActionChains(driver)
+    actions.move_to_element(name_field).perform()
+
+    # Chờ cho luồng kết thúc
+    thread.join()
+        
     # Chờ trước khi điền dữ liệu tiếp theo
     input("Nhấn Enter để tiếp tục nhập dữ liệu...")
 
     # Tìm nút "Gửi" dựa trên thuộc tính data-automation-id
-    submit_button = driver.find_element(By.CSS_SELECTOR, '[data-automation-id="submitButton"]')
+    submit_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-automation-id="submitButton"]')))
 
     # Bấm vào nút "Gửi"
     submit_button.click()
 
     # Đợi vài giây để xem kết quả (hoặc có thể tiếp tục xử lý các bước khác)
-    time.sleep(1)
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-automation-id="submitAnother"]')))
 
     # Tìm nút "Gửi phản hồi khác" dựa trên thuộc tính data-automation-id
     submit_another_button = driver.find_element(By.CSS_SELECTOR, '[data-automation-id="submitAnother"]')
 
     # Bấm vào nút "Gửi phản hồi khác"
     submit_another_button.click()
-
-    # Đợi vài giây để xem kết quả (hoặc có thể tiếp tục xử lý các bước khác)
-    time.sleep(1)
 
 # Đóng trình duyệt
 driver.quit()
